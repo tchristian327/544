@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>XML, HTML, and Web Scraping</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Practice_Activity_4_1_Webscraping_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Practice_Activity_4_1_Webscraping_files/libs/quarto-html/quarto.js"></script>
+<script src="Practice_Activity_4_1_Webscraping_files/libs/quarto-html/popper.min.js"></script>
+<script src="Practice_Activity_4_1_Webscraping_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Practice_Activity_4_1_Webscraping_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Practice_Activity_4_1_Webscraping_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Practice_Activity_4_1_Webscraping_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Practice_Activity_4_1_Webscraping_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Practice_Activity_4_1_Webscraping_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Practice_Activity_4_1_Webscraping_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">XML, HTML, and Web Scraping</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>JSON and XML are two different ways to represent hierarchical data. Which one is better? There are lots of articles online which discuss similarities and differences between JSON and XML and their advantages and disadvantages. Both formats are still in current usage, so it is good to be familiar with both. However, JSON is more common, so we’ll focus on working with JSON representations of hierarchical data.</p>
+<p>The reading covered an example of using Beautiful Soup to parse XML. Rather than doing another example XML now, we’ll skip straight to scraping HTML from a webpage. Both HTML and XML can be parsed in a similar way with Beautiful Soup.</p>
+<div id="cell-2" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> bs4 <span class="im">import</span> BeautifulSoup</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="scraping-an-html-table-with-beautiful-soup" class="level2">
+<h2 class="anchored" data-anchor-id="scraping-an-html-table-with-beautiful-soup">Scraping an HTML table with Beautiful Soup</h2>
+<p>Open the URL https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population and scroll down until you see a table of the cities in the U.S. with population over 100,000 (as of Jul 1, 2022). We’ll use Beautiful Soup to scrape information from this table.</p>
+<p>Read in the HTML from the ULR using the <code>requests</code> library.</p>
+<div id="cell-6" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> requests.get(<span class="st">"https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Use Beautiful Soup to parse this string into a tree called <code>soup</code></p>
+<div id="cell-8" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>soup <span class="op">=</span> BeautifulSoup(response.content, <span class="st">"html.parser"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To find an HTML tag corresponding to a specific element on a webpage, right-click on it and choose “Inspect element”. Go to the cities table Wikipedia page and do this now.</p>
+<p>You should find that the cities table on the Wikipedia page corresponds to the element</p>
+<pre><code>&lt;table class="wikitable sortable jquery-tablesorter" style="text-align:center"&gt;</code></pre>
+<p>There are many <code>&lt;table&gt;</code> tags on the page.</p>
+<div id="cell-11" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(soup.find_all(<span class="st">"table"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We can use attributes like <code>class=</code> and <code>style=</code> to narrow down the list.</p>
+<div id="cell-13" class="cell" data-outputid="86b57764-ab4e-462f-d060-dbc2d341a8b6">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(soup.find_all(<span class="st">"table"</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                  attrs<span class="op">=</span>{</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"class"</span>: <span class="st">"wikitable sortable"</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"style"</span>: <span class="st">"text-align:center"</span>}</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="33">
+<pre><code>0</code></pre>
+</div>
+</div>
+<p>At this point, you can manually inspect the tables on the webpage to find that the one we want is the first one (see <code>[0]</code> below). We’ll store this as <code>table</code>.</p>
+<div id="cell-15" class="cell" data-outputid="d1fbb0c1-ce11-489b-cbe6-026787cec704">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>table <span class="op">=</span> soup.find_all(<span class="st">"table"</span>,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                  attrs<span class="op">=</span>{</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"class"</span>: <span class="st">"wikitable sortable"</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"style"</span>: <span class="st">"text-align:center"</span>}</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                  )[<span class="dv">0</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">IndexError</span>                                Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-34-30c9df03cb78&gt;</span> in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> table = soup.find_all("table",
+</span><span class="ansi-green-fg ansi-bold">      2</span>                   attrs={
+<span class="ansi-green-fg ansi-bold">      3</span>                       <span class="ansi-blue-fg">"class"</span><span class="ansi-blue-fg">:</span> <span class="ansi-blue-fg">"wikitable sortable"</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg ansi-bold">      4</span>                       "style": "text-align:center"}
+<span class="ansi-green-fg ansi-bold">      5</span>                   )[0]
+
+<span class="ansi-red-fg">IndexError</span>: list index out of range</pre>
+</div>
+</div>
+</div>
+<p><strong>Now you will write code to scrape the information in <code>table</code> to create a Pandas data frame with one row for each city and columns for: city, state, population (2022 estimate), and 2020 land area (sq mi).</strong> Refer to the Notes/suggestions below as you write your code. A few Hints are provided further down, but try coding first before looking at the hints.</p>
+<p>Notes/suggestions:</p>
+<ul>
+<li>Use as a guide the code from the reading that produced the data frame of Statistics faculty</li>
+<li>Inspect the page source as you write your code</li>
+<li>You will need to write a loop to get the information for all cities, but you might want to try just scraping the info for New York first</li>
+<li>You will need to pull the text from the tag. If <code>.text</code> returns text with “” at the end, try <code>.get_text(strip = True)</code> instead of <code>.text</code></li>
+<li>Don’t forget to convert to a Pandas Data Frame; it should have 333 rows and 4 columns</li>
+<li>The goal of this exercise is just to create the Data Frame. If you were going to use it — e.g., what is the population density for all cities in CA? — then you would need to clean the data first (to clean strings and convert to quantitative). (You can use Beautiful Soup to do some of the cleaning for you, but that goes beyond our scope.)</li>
+</ul>
+<div id="cell-18" class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># YOUR CODE HERE. ADD AS MANY CELLS AS NEEDED</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Hints:</p>
+<ul>
+<li>Each city is a row in the table; find all the <code>&lt;tr&gt;</code> tags to find all the cities</li>
+<li>Look for the <code>&lt;td&gt;</code> tag to see table entries within a row</li>
+<li>The rank column is represented by <code>&lt;th&gt;</code> tags, rather than <code>&lt;td&gt;</code> tags. So within a row, the first (that is, <code>[0]</code>) <code>&lt;td&gt;</code> tag corresponds to the city name.</li>
+</ul>
+</section>
+<section id="aside-scraping-an-html-table-with-pandas" class="level2">
+<h2 class="anchored" data-anchor-id="aside-scraping-an-html-table-with-pandas">Aside: Scraping an HTML table with Pandas</h2>
+<p>The Pandas command <code>read_html</code> can be used to scrape information from an HTML table on a webpage.</p>
+<p>We can call <code>read_html</code> on the URL.</p>
+<div id="cell-23" class="cell" data-outputid="10c3f060-3d3f-46ce-b591-28fd19a0cf34">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>pd.read_html(<span class="st">"https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="35">
+<pre><code>[                    Population tables of U.S. cities
+ 0  The skyline of New York City, the most populou...
+ 1                                             Cities
+ 2  Population AreaDensityEthnic identityForeign-b...
+ 3                                        Urban areas
+ 4             Populous cities and metropolitan areas
+ 5                                 Metropolitan areas
+ 6  184 combined statistical areas935 core-based s...
+ 7                                        Megaregions
+ 8  See related population listsNorth American met...
+ 9                                                vte,
+     0                               1
+ 0 NaN                   State capital
+ 1 NaN              State largest city
+ 2 NaN  State capital and largest city
+ 3 NaN                 Federal capital,
+             City  ST 2023 estimate 2020 census  Change 2020 land area          \
+             City  ST 2023 estimate 2020 census  Change            mi2     km2   
+ 0    New York[c]  NY       8258035     8804190  −6.20%          300.5   778.3   
+ 1    Los Angeles  CA       3820914     3898747  −2.00%          469.5  1216.0   
+ 2        Chicago  IL       2664452     2746388  −2.98%          227.7   589.7   
+ 3        Houston  TX       2314157     2304580  +0.42%          640.4  1658.6   
+ 4        Phoenix  AZ       1650070     1608139  +2.61%          518.0  1341.6   
+ ..           ...  ..           ...         ...     ...            ...     ...   
+ 331         Yuma  AZ        100858       95548  +5.56%          120.7   312.6   
+ 332  New Bedford  MA        100695      101079  −0.38%           20.0    51.8   
+ 333   Suffolk[l]  VA        100659       94324  +6.72%          399.2  1033.9   
+ 334     Hesperia  CA        100633       99818  +0.82%           72.7   188.3   
+ 335    Davenport  IA        100354      101724  −1.35%           63.8   165.2   
+ 
+     2020 density                                      Location  
+            / mi2  / km2                               Location  
+ 0          29298  11312    40°40′N 73°56′W﻿ / ﻿40.66°N 73.94°W  
+ 1           8304   3206  34°01′N 118°25′W﻿ / ﻿34.02°N 118.41°W  
+ 2          12061   4657    41°50′N 87°41′W﻿ / ﻿41.84°N 87.68°W  
+ 3           3599   1390    29°47′N 95°23′W﻿ / ﻿29.79°N 95.39°W  
+ 4           3105   1199  33°34′N 112°05′W﻿ / ﻿33.57°N 112.09°W  
+ ..           ...    ...                                    ...  
+ 331          792    306  32°31′N 114°31′W﻿ / ﻿32.52°N 114.52°W  
+ 332         5054   1951    41°40′N 70°56′W﻿ / ﻿41.66°N 70.94°W  
+ 333          236     91    36°42′N 76°38′W﻿ / ﻿36.70°N 76.63°W  
+ 334         1373    530  34°24′N 117°19′W﻿ / ﻿34.40°N 117.32°W  
+ 335         1594    615    41°34′N 90°36′W﻿ / ﻿41.56°N 90.60°W  
+ 
+ [336 rows x 10 columns],
+         Population  Number of municipal governments
+ 0       1,000,000+                                9
+ 1  700,000–999,999                               11
+ 2  500,000–699,999                               18
+ 3  400,000–499,999                               11
+ 4  300,000–399,999                               20
+ 5  200,000–299,999                               55
+ 6  100,000–199,999                              212
+ 7            Total                              336,
+                                                 State  Number of listed cities
+ 0                                          California                       74
+ 1                                               Texas                       42
+ 2                                             Florida                       23
+ 3                                             Arizona                       13
+ 4                                            Colorado                       12
+ 5                                      North Carolina                       10
+ 6                           Massachusetts, Washington                        9
+ 7                         Georgia, Illinois, Virginia                        8
+ 8                                Michigan, New Jersey                        7
+ 9   Missouri, Indiana, New York, Ohio, Oregon, Ten...                        6
+ 10         Alabama, Connecticut, Kansas, Nevada, Utah                        5
+ 11                                Louisiana, Oklahoma                        4
+ 12  Iowa, Idaho, Minnesota, New Mexico, Pennsylvan...                        3
+ 13                       Arkansas, Kentucky, Nebraska                        2
+ 14  Alaska, District of Columbia, Hawaii, Maryland...                        1
+ 15   Delaware, Maine, Vermont, West Virginia, Wyoming                        0,
+   Municipio  2023 estimate  2020 census  Change 2020 land area  \
+ 0  San Juan         333005       342259  −2.70%     39.8&nbsp;sq&nbsp;mi   
+ 1   Bayamón         180835       185187  −2.35%     27.0&nbsp;sq&nbsp;mi   
+ 2  Carolina         150843       154815  −2.57%     20.7&nbsp;sq&nbsp;mi   
+ 3     Ponce         130251       137491  −5.27%     28.4&nbsp;sq&nbsp;mi   
+ 4    Caguas         124608       127244  −2.07%     10.9&nbsp;sq&nbsp;mi   
+ 
+   2020 land area.1  2020 density 2020 density.1  \
+ 0        103.1&nbsp;km2   8,599/sq&nbsp;mi      3,320/km2   
+ 1         69.9&nbsp;km2   6,859/sq&nbsp;mi      2,648/km2   
+ 2         53.6&nbsp;km2   7,479/sq&nbsp;mi      2,888/km2   
+ 3         73.6&nbsp;km2   4,841/sq&nbsp;mi      1,869/km2   
+ 4         28.2&nbsp;km2  11,674/sq&nbsp;mi      4,507/km2   
+ 
+                               Location  
+ 0  18°24′N 66°04′W﻿ / ﻿18.40°N 66.06°W  
+ 1  18°23′N 66°10′W﻿ / ﻿18.38°N 66.16°W  
+ 2  18°25′N 65°59′W﻿ / ﻿18.41°N 65.98°W  
+ 3  18°00′N 66°37′W﻿ / ﻿18.00°N 66.62°W  
+ 4  18°14′N 66°02′W﻿ / ﻿18.23°N 66.04°W  ,
+    Census- designated place  ST 2020 census 2010 census    Change  \
+    Census- designated place  ST 2020 census 2010 census    Change   
+ 0                 Arlington  VA      238643      207627   +14.94%   
+ 1                Enterprise  NV      221831      108481  +104.49%   
+ 2             Spring Valley  NV      215597      178395   +20.85%   
+ 3             Sunrise Manor  NV      205618      189372    +8.58%   
+ 4                  Paradise  NV      191238      223167   −14.31%   
+ 5                  Metairie  LA      143507      138481    +3.63%   
+ 6          East Los Angeles  CA      118786      126496    −6.10%   
+ 7                   Brandon  FL      114626      103483   +10.77%   
+ 8             The Woodlands  TX      114436       93847   +21.94%   
+ 9              Lehigh Acres  FL      114287       86784   +31.69%   
+ 10              Spring Hill  FL      113568       98621   +15.16%   
+ 11                Riverview  FL      107396       71050   +51.16%   
+ 12                 Columbia  MD      104681       99615    +5.09%   
+ 13          Highlands Ranch  CO      103444       96713    +6.96%   
+ 
+    2020 land area          2020 density        \
+               mi2      km2        / mi2 / km2   
+ 0            26.0   67.340         9179  3544   
+ 1            66.0  170.939         3361  1298   
+ 2            35.5   91.945         6073  2345   
+ 3            33.7   87.283         6101  2356   
+ 4            42.4  109.815         4510  1740   
+ 5            23.3   60.347         6159  2378   
+ 6             7.5   19.425        15838  6115   
+ 7            33.1   85.729         3463  1337   
+ 8            43.3  112.146         2643  1020   
+ 9            92.7  240.092         1233   476   
+ 10           59.9  155.140         1896   732   
+ 11           46.2  119.657         2325   898   
+ 12           31.9   82.621         3282  1267   
+ 13           24.3   62.937         4257  1644   
+ 
+                                  Location  
+                                  Location  
+ 0     38°53′N 77°06′W﻿ / ﻿38.88°N 77.10°W  
+ 1   36°01′N 115°14′W﻿ / ﻿36.01°N 115.23°W  
+ 2   36°06′N 115°16′W﻿ / ﻿36.10°N 115.26°W  
+ 3   36°11′N 115°03′W﻿ / ﻿36.18°N 115.05°W  
+ 4   36°05′N 115°08′W﻿ / ﻿36.09°N 115.14°W  
+ 5     30°00′N 90°11′W﻿ / ﻿30.00°N 90.18°W  
+ 6   34°02′N 118°10′W﻿ / ﻿34.03°N 118.17°W  
+ 7     27°56′N 82°18′W﻿ / ﻿27.94°N 82.30°W  
+ 8     30°10′N 95°31′W﻿ / ﻿30.17°N 95.51°W  
+ 9     26°37′N 81°38′W﻿ / ﻿26.61°N 81.64°W  
+ 10    28°29′N 82°32′W﻿ / ﻿28.48°N 82.53°W  
+ 11    27°49′N 82°18′W﻿ / ﻿27.82°N 82.30°W  
+ 12    39°12′N 76°52′W﻿ / ﻿39.20°N 76.86°W  
+ 13  39°32′N 104°58′W﻿ / ﻿39.54°N 104.97°W  ,
+               City  ST  2023 estimate  Peak population % decline from peak  \
+ 0        Allegheny  PA            NaN           129896                 NaN   
+ 1         Brooklyn  NY            NaN           806343                 NaN   
+ 2           Camden  NJ        71100.0           124555             −42.92%   
+ 3           Canton  OH        69197.0           116912             −40.81%   
+ 4   Citrus Heights  CA        86239.0           107439             −19.73%   
+ 5        Daly City  CA        99833.0           104901              −4.83%   
+ 6           Duluth  MN        87680.0           107312             −18.29%   
+ 7             Erie  PA        92957.0           138440             −32.85%   
+ 8       Fall River  MA        93840.0           120485             −22.11%   
+ 9      Federal Way  WA        97701.0           101030              −3.30%   
+ 10           Flint  MI        79661.0           196940             −59.55%   
+ 11            Gary  IN        67652.0           178320             −62.06%   
+ 12         Hammond  IN        76193.0           111698             −31.79%   
+ 13         Livonia  MI        92185.0           110109             −16.28%   
+ 14   Niagara Falls  NY        47599.0           102394             −53.51%   
+ 15         Norwalk  CA        98078.0           105549              −7.08%   
+ 16           Parma  OH        78951.0           100216             −21.22%   
+ 17      Portsmouth  VA        97454.0           114773             −15.09%   
+ 18         Reading  PA        94903.0           111171             −14.63%   
+ 19         Roanoke  VA        99578.0           100220              −0.64%   
+ 20        Scranton  PA        75805.0           143333             −47.11%   
+ 21      Somerville  MA        80407.0           103908             −22.62%   
+ 22      St. Joseph  MO        70634.0           102979             −31.41%   
+ 23         Trenton  NJ        89620.0           128009             −29.99%   
+ 24           Utica  NY        63607.0           101740             −37.48%   
+ 25      Wilmington  DE        71675.0           112504             −36.29%   
+ 26      Youngstown  OH        59108.0           170002             −65.23%   
+ 
+     Peak year Unnamed: 6  
+ 0        1907        [z]  
+ 1        1898       [aa]  
+ 2        1950        NaN  
+ 3        1950        NaN  
+ 4        1990        NaN  
+ 5        2020        NaN  
+ 6        1960        NaN  
+ 7        1960        NaN  
+ 8        1920        NaN  
+ 9        2020        NaN  
+ 10       1960        NaN  
+ 11       1960        NaN  
+ 12       1960        NaN  
+ 13       1970        NaN  
+ 14       1960        NaN  
+ 15       2010        NaN  
+ 16       1970        NaN  
+ 17       1960        NaN  
+ 18       1930        NaN  
+ 19       1980        NaN  
+ 20       1930        NaN  
+ 21       1930        NaN  
+ 22       1900       [ab]  
+ 23       1950        NaN  
+ 24       1930        NaN  
+ 25       1940        NaN  
+ 26       1930        NaN  ,
+   vteThe 100 most populous cities of the United States  \
+ 0  New York, New York Los Angeles, California Chi...     
+ 1                                                NaN     
+ 2  Cities ranked by United States Census Bureau p...     
+ 
+   vteThe 100 most populous cities of the United States.1  \
+ 0  New York, New York Los Angeles, California Chi...       
+ 1  New York, New York Los Angeles, California Chi...       
+ 2  Cities ranked by United States Census Bureau p...       
+ 
+                                           Unnamed: 2  \
+ 0                                                NaN   
+ 1  Portland, Oregon Louisville, Kentucky Memphis,...   
+ 2                                                NaN   
+ 
+                                           Unnamed: 3  \
+ 0                                                NaN   
+ 1  Arlington, Texas Aurora, Colorado New Orleans,...   
+ 2                                                NaN   
+ 
+                                           Unnamed: 4  
+ 0                                                NaN  
+ 1  Chandler, Arizona North Las Vegas, Nevada Chul...  
+ 2                                                NaN  ,
+     0                                                  1  \
+ 0 NaN  New York, New York Los Angeles, California Chi...   
+ 
+                                                    2  \
+ 0  Portland, Oregon Louisville, Kentucky Memphis,...   
+ 
+                                                    3  \
+ 0  Arlington, Texas Aurora, Colorado New Orleans,...   
+ 
+                                                    4  
+ 0  Chandler, Arizona North Las Vegas, Nevada Chul...  ]</code></pre>
+</div>
+</div>
+<p>However, this scrapes all the tables on the webpage, not just the one we want. As with Beautiful Soup, we can narrow the search by specifying the table attributes.</p>
+<div id="cell-25" class="cell" data-outputid="871654a5-1cbd-4b48-d0b3-a152ca324108">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>pd.read_html(<span class="st">"https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population"</span>, attrs <span class="op">=</span> {<span class="st">'class'</span>: <span class="st">'wikitable sortable'</span>, <span class="st">"style"</span>: <span class="st">"text-align:center"</span>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-36-6b8fe5803685&gt;</span> in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span>pd<span class="ansi-blue-fg">.</span>read_html<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">"https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population"</span><span class="ansi-blue-fg">,</span> attrs <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">{</span><span class="ansi-blue-fg">'class'</span><span class="ansi-blue-fg">:</span> <span class="ansi-blue-fg">'wikitable sortable'</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">"style"</span><span class="ansi-blue-fg">:</span> <span class="ansi-blue-fg">"text-align:center"</span><span class="ansi-blue-fg">}</span><span class="ansi-blue-fg">)</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python3.10/dist-packages/pandas/io/html.py</span> in <span class="ansi-cyan-fg">read_html</span><span class="ansi-blue-fg">(io, match, flavor, header, index_col, skiprows, attrs, parse_dates, thousands, encoding, decimal, converters, na_values, keep_default_na, displayed_only, extract_links, dtype_backend, storage_options)</span>
+<span class="ansi-green-fg ansi-bold">   1238</span>         )
+<span class="ansi-green-fg ansi-bold">   1239</span> 
+<span class="ansi-green-fg">-&gt; 1240</span><span class="ansi-red-fg">     return _parse(
+</span><span class="ansi-green-fg ansi-bold">   1241</span>         flavor<span class="ansi-blue-fg">=</span>flavor<span class="ansi-blue-fg">,</span>
+<span class="ansi-green-fg ansi-bold">   1242</span>         io<span class="ansi-blue-fg">=</span>io<span class="ansi-blue-fg">,</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python3.10/dist-packages/pandas/io/html.py</span> in <span class="ansi-cyan-fg">_parse</span><span class="ansi-blue-fg">(flavor, io, match, attrs, encoding, displayed_only, extract_links, storage_options, **kwargs)</span>
+<span class="ansi-green-fg ansi-bold">   1001</span>     <span class="ansi-green-fg">else</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg ansi-bold">   1002</span>         <span class="ansi-green-fg">assert</span> retained <span class="ansi-green-fg">is</span> <span class="ansi-green-fg">not</span> <span class="ansi-green-fg">None</span>  <span class="ansi-red-fg"># for mypy</span>
+<span class="ansi-green-fg">-&gt; 1003</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">raise</span> retained
+<span class="ansi-green-fg ansi-bold">   1004</span> 
+<span class="ansi-green-fg ansi-bold">   1005</span>     ret <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">]</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python3.10/dist-packages/pandas/io/html.py</span> in <span class="ansi-cyan-fg">_parse</span><span class="ansi-blue-fg">(flavor, io, match, attrs, encoding, displayed_only, extract_links, storage_options, **kwargs)</span>
+<span class="ansi-green-fg ansi-bold">    981</span> 
+<span class="ansi-green-fg ansi-bold">    982</span>         <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">--&gt; 983</span><span class="ansi-red-fg">             </span>tables <span class="ansi-blue-fg">=</span> p<span class="ansi-blue-fg">.</span>parse_tables<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg ansi-bold">    984</span>         <span class="ansi-green-fg">except</span> ValueError <span class="ansi-green-fg">as</span> caught<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg ansi-bold">    985</span>             <span class="ansi-red-fg"># if `io` is an io-like object, check if it's seekable</span>
+
+<span class="ansi-green-fg">/usr/local/lib/python3.10/dist-packages/pandas/io/html.py</span> in <span class="ansi-cyan-fg">parse_tables</span><span class="ansi-blue-fg">(self)</span>
+<span class="ansi-green-fg ansi-bold">    247</span>         list of parsed <span class="ansi-blue-fg">(</span>header<span class="ansi-blue-fg">,</span> body<span class="ansi-blue-fg">,</span> footer<span class="ansi-blue-fg">)</span> tuples <span class="ansi-green-fg">from</span> tables<span class="ansi-blue-fg">.</span>
+<span class="ansi-green-fg ansi-bold">    248</span>         """
+<span class="ansi-green-fg">--&gt; 249</span><span class="ansi-red-fg">         </span>tables <span class="ansi-blue-fg">=</span> self<span class="ansi-blue-fg">.</span>_parse_tables<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>_build_doc<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> self<span class="ansi-blue-fg">.</span>match<span class="ansi-blue-fg">,</span> self<span class="ansi-blue-fg">.</span>attrs<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg ansi-bold">    250</span>         <span class="ansi-green-fg">return</span> <span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">.</span>_parse_thead_tbody_tfoot<span class="ansi-blue-fg">(</span>table<span class="ansi-blue-fg">)</span> <span class="ansi-green-fg">for</span> table <span class="ansi-green-fg">in</span> tables<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg ansi-bold">    251</span> 
+
+<span class="ansi-green-fg">/usr/local/lib/python3.10/dist-packages/pandas/io/html.py</span> in <span class="ansi-cyan-fg">_parse_tables</span><span class="ansi-blue-fg">(self, document, match, attrs)</span>
+<span class="ansi-green-fg ansi-bold">    596</span>         tables <span class="ansi-blue-fg">=</span> document<span class="ansi-blue-fg">.</span>find_all<span class="ansi-blue-fg">(</span>element_name<span class="ansi-blue-fg">,</span> attrs<span class="ansi-blue-fg">=</span>attrs<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg ansi-bold">    597</span>         <span class="ansi-green-fg">if</span> <span class="ansi-green-fg">not</span> tables<span class="ansi-blue-fg">:</span>
+<span class="ansi-green-fg">--&gt; 598</span><span class="ansi-red-fg">             </span><span class="ansi-green-fg">raise</span> ValueError<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">"No tables found"</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-fg ansi-bold">    599</span> 
+<span class="ansi-green-fg ansi-bold">    600</span>         result <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">]</span>
+
+<span class="ansi-red-fg">ValueError</span>: No tables found</pre>
+</div>
+</div>
+</div>
+<p>This still returns 3 tables. As we remarked above, the table that we want is the first one (see <code>[0]</code> below).</p>
+<div id="cell-27" class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>df_cities2 <span class="op">=</span> pd.read_html(<span class="st">"https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population"</span>, attrs <span class="op">=</span> {<span class="st">'class'</span>: <span class="st">'wikitable sortable'</span>, <span class="st">"style"</span>: <span class="st">"text-align:center"</span>})[<span class="dv">0</span>]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>df_cities2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Wait, that seemed much easier than using Beautiful Soup, and it returned a data frame, and we even got for free some formatting like removing the commas from the population! Why didn’t we just use <code>read_html</code> in the first place? It’s true the <code>read_html</code> works well when scraping information from an HTML <em>table</em>. Unfortunately, you often want to scrape information from a webpage that isn’t conveniently stored in an HTML table, in which case <code>read_html</code> won’t work. (It only searches for <code>&lt;table&gt;</code>, <code>&lt;th&gt;</code>, <code>&lt;tr&gt;</code>, and <code>&lt;td&gt;</code> tags, but there are many other HTML tags.) Though Beautiful Soup is not as simple as <code>read_html</code>, it is more flexible and thus more widely applicable.</p>
+</section>
+<section id="scraping-information-that-is-not-in-a-table-with-beautiful-soup" class="level2">
+<h2 class="anchored" data-anchor-id="scraping-information-that-is-not-in-a-table-with-beautiful-soup">Scraping information that is NOT in a <code>&lt;table&gt;</code> with Beautiful Soup</h2>
+<p>The Cal Poly course catalog http://catalog.calpoly.edu/collegesandprograms/collegeofsciencemathematics/statistics/#courseinventory contains a list of courses offered by the Statistics department. <strong>You will scrape this website to obtain a Pandas data frame with one row for each DATA or STAT course and two columns: course name and number (e.g, DATA 301. Introduction to Data Science) and term typically offered (e.g., Term Typically Offered: F, W, SP).</strong></p>
+<p>Note: Pandas <code>read_html</code> is not help here since the courses are not stored in a <code>&lt;table&gt;.</code></p>
+<div id="cell-32" class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pd.read_html(<span class="st">"http://catalog.calpoly.edu/collegesandprograms/collegeofsciencemathematics/statistics/#courseinventory"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Notes/suggestions:</p>
+<ul>
+<li>Inspect the page source as you write your code</li>
+<li>The courses are not stored in a <code>&lt;table&gt;</code>. How are they stored?</li>
+<li>You will need to write a loop to get the information for all courses, but you might want to try just scraping the info for DATA 100 first</li>
+<li>What kind of tag is the course name stored in? What is the <code>class</code> of the tag?</li>
+<li>What kind of tag is the quarter(s) the course is offered stored in? What is the <code>class</code> of the tag? Is this the only tag of this type with the class? How will you get the one you want?</li>
+<li>You don’t have to remove the number of units (e.g., 4 units) from the course name and number, but you can try it if you want</li>
+<li>You will need to pull the text from the tag. If <code>.text</code> returns text with “” at the end, try <code>get_text(strip = True)</code> instead of <code>text</code></li>
+<li>Don’t forget to convert to a Pandas Data Frame; it should have 74 rows and 2 columns</li>
+<li>The goal of this exercise is just to create the Data Frame. If you were going to use it then you might need to clean the data first. (You can use Beautiful Soup to do some of the cleaning for you, but that goes beyond our scope.)</li>
+</ul>
+<div id="cell-34" class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># YOUR CODE HERE. ADD AS MANY CELLS AS NEEDED</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Hints:</p>
+<ul>
+<li>Each course is represented by a <code>&lt;div&gt;</code> with <code>class=courseblock</code>, so you can find all the courses with <code>soup.find_all("div", {"class": "courseblock"})</code></li>
+<li>The course name is in a <code>&lt;p&gt;</code> tag with <code>class=courseblocktitle</code>, inside a <code>&lt;strong&gt;</code> tag. (Though I don’t think we need to find the strong tag here.)</li>
+<li>The term typically offered is in <code>&lt;p&gt;</code> tag with <code>class=noindent</code>. However, there are several tags with this class; term typically offered is the first one.</li>
+<li>If you want to use Beautiful Soup to remove the course units (e.g., 4 units), find the <code>&lt;span&gt;</code> tag within the course name tag and <code>.extract()</code> this span tag</li>
+</ul>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
